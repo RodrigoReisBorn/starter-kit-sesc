@@ -1,0 +1,25 @@
+{
+  "name": "arquitetura-sesc",
+  "version": "1.0.1",
+  "description": "Teste de criação de pacote NPM no Azure DevOps",
+  "main": "src/index.js",  
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RodrigoReisBorn/starter-kit-sesc.git"
+  },
+  "keywords": [
+    "arquitetura",
+    "sesc"
+  ],
+  "author": "Sesc",   
+  "contributors": [
+	{
+		"name": "Rodrigo Reis"
+	}
+  ],
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/RodrigoReisBorn/starter-kit-sesc/issues"
+  },
+  "homepage": "https://github.com/RodrigoReisBorn/starter-kit-sesc#readme"
+}
