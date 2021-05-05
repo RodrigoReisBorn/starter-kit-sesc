@@ -1,0 +1,118 @@
+version: '3.4'
+
+services:
+  ##########################################################
+  stefanini.demoapp.api:
+    image: stefanini/demoappapi
+    build:
+      context: .
+      dockerfile: Stefanini.DemoApp.Api/Dockerfile
+    ports: 
+     - "8080:80"      
+    networks: 
+     - stefanini_net
+  ##########################################################
+  sqlserver:
+    image: "mcr.microsoft.com/mssql/server:2017-latest"
+    ports:
+      - "1433:1433"
+      - "1434:1434"
+      - "443:443"
+    volumes: 
+      - ms_data:/var/opt/mssql
+    environment:      
+      SA_PASSWORD: "SqlServer@123"
+      ACCEPT_EULA: "Y"   
+    networks: 
+     - stefanini_net
+  ##########################################################
+  # Enterprise log
+  ##########################################################
+  rabbitmqlog:
+    container_name: rabbitmqlog
+    image: rabbitmq:3-management-alpine
+    volumes:
+      - mq_datalog:/var/lib/rabbitmq/mnesia
+    ports:
+      - "9191:15672"
+      - "9090:5672" 
+    networks:
+      - stefanini_net
+    environment:
+      RABBITMQ_DEFAULT_USER: logUser
+      RABBITMQ_DEFAULT_PASS: logPwd
+      RABBITMQ_DEFAULT_VHOST: EnterpriseLog
+  ##########################################################
+  elasticsearch:
+    container_name: ElasticSearch    
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.7.0
+    environment: 
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - http.host=0.0.0.0
+      - transport.host=127.0.0.1
+      - network.host=0.0.0.0
+      - cluster.name="elastic_stack_logging"
+      - node.name="elastic_stack_logging_data"
+      - discovery.zen.minimum_master_nodes=1
+      - http.cors.enabled=true
+      - http.cors.allow-origin="*"
+    volumes: 
+      - elasticsearch_data:/usr/share/elasticsearch/data      
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -I -s -L http://localhost:9200 || exit 1"]
+      interval: 30s
+      timeout: 20s
+      retries: 5     
+    networks:
+      - stefanini_net
+  ##########################################################
+  kibana:
+    container_name: Kibana    
+    image: docker.elastic.co/kibana/kibana-oss:6.7.0
+    environment:
+      - server.name=kibana
+      - server.host="0"
+      - elasticsearch.url=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    links:
+      - elasticsearch:elasticsearch
+    ports:
+      - "5601:5601"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -I -s -L http://localhost:5601/ || exit 1"]
+      interval: 30s
+      timeout: 20s
+      retries: 5     
+    networks:
+      - stefanini_net
+  ##########################################################
+  logstash:
+    container_name: LogStash    
+    image: docker.elastic.co/logstash/logstash-oss:6.7.0
+    volumes:
+      - ./product.logstash.conf:/config/product.logstash.conf      
+    links:
+      - rabbitmqlog:AMQPServer
+      - elasticsearch:elasticsearch
+    networks:
+      - stefanini_net
+    command: logstash -f /config/product.logstash.conf  
+    depends_on:
+      - rabbitmqlog
+      - elasticsearch
+  ##########################################################
+# FIM Enterprise log
+
+volumes:
+  ms_data:
+  mq_datalog:
+  elasticsearch_data:  
+
+networks: 
+  stefanini_net: 
+    driver: bridge
