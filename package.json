@@ -1,6 +1,6 @@
 {
   "name": "arquitetura-sesc",
-  "version": "1.0.1",
+  "version": "1.0.4",
   "description": "Teste de criação de pacote NPM no Azure DevOps",
   "main": "src/index.js",  
   "repository": {
